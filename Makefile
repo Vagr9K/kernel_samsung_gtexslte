@@ -1,7 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 10
 SUBLEVEL = 65
-EXTRAVERSION =
+EXTRAVERSION = V9K
 NAME = TOSSUG Baby Fish
 
 # *DOCUMENTATION*
@@ -162,7 +162,7 @@ export srctree objtree VPATH
 # SUBARCH tells the usermode build what the underlying arch is.  That is set
 # first, and if a usermode build is happening, the "ARCH=um" on the command
 # line overrides the setting of ARCH below.  If a native build is happening,
-# then ARCH is assigned, getting whatever value it gets normally, and 
+# then ARCH is assigned, getting whatever value it gets normally, and
 # SUBARCH is subsequently ignored.
 
 SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
@@ -241,8 +241,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
-HOSTCXXFLAGS = -O2
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer
+HOSTCXXFLAGS = -O3
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -285,7 +285,7 @@ export KBUILD_CHECKSRC KBUILD_SRC KBUILD_EXTMOD
 #         cmd_cc_o_c       = $(CC) $(c_flags) -c -o $@ $<
 #
 # If $(quiet) is empty, the whole command will be printed.
-# If it is set to "quiet_", only the short version will be printed. 
+# If it is set to "quiet_", only the short version will be printed.
 # If it is set to "silent_", nothing will be printed at all, since
 # the variable $(silent_cmd_cc_o_c) doesn't exist.
 #
@@ -373,7 +373,10 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -fno-delete-null-pointer-checks
+		   -fno-delete-null-pointer-checks \
+		   -std=gnu89 \
+		   -munaligned-access
+
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
@@ -569,11 +572,15 @@ endif # $(dot-config)
 # This allow a user to issue only 'make' to build a kernel including modules
 # Defaults to vmlinux, but the arch makefile usually adds further targets
 all: vmlinux
+EXTERNAL_CFLAGS = -fgcse-las -fgcse-sm -fipa-pta -fivopts -fomit-frame-pointer \
+		   -frename-registers -fsection-anchors -ftracer -ftree-loop-im \
+		   -ftree-loop-ivcanon -funsafe-loop-optimizations -funswitch-loops \
+		   -fweb -Wno-error=array-bounds -Wno-error=clobbered
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
+KBUILD_CFLAGS	+= -O3 $(call cc-disable-warning,maybe-uninitialized,)
 else
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS	+= -O3
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
@@ -782,7 +789,7 @@ ifdef CONFIG_BUILD_DOCSRC
 endif
 	+$(call if_changed,link-vmlinux)
 
-# The actual objects are generated when descending, 
+# The actual objects are generated when descending,
 # make sure no implicit rule kicks in
 $(sort $(vmlinux-deps)): $(vmlinux-dirs) ;
 
@@ -1017,10 +1024,12 @@ endif # CONFIG_MODULES
 
 # Directories & files removed with 'make clean'
 CLEAN_DIRS  += $(MODVERDIR)
+CLEAN_FILES += dt.img
 
 # Directories & files removed with 'make mrproper'
 MRPROPER_DIRS  += include/config usr/include include/generated          \
-                  arch/*/include/generated
+									arch/*/include/generated
+
 MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
 		  signing_key.priv signing_key.x509 x509.genkey		\
@@ -1065,6 +1074,7 @@ distclean: mrproper
 		\( -name '*.orig' -o -name '*.rej' -o -name '*~' \
 		-o -name '*.bak' -o -name '#*#' -o -name '.*.orig' \
 		-o -name '.*.rej' \
+		-o -name '.sprd-scx35l*' \
 		-o -name '*%' -o -name '.*.cmd' -o -name 'core' \) \
 		-type f -print | xargs rm -f
 
@@ -1391,7 +1401,7 @@ endif
 	$(build)=$(build-dir) $(@:.ko=.o)
 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modpost
 
-# FIXME Should go into a make.lib or something 
+# FIXME Should go into a make.lib or something
 # ===========================================================================
 
 quiet_cmd_rmdirs = $(if $(wildcard $(rm-dirs)),CLEAN   $(wildcard $(rm-dirs)))

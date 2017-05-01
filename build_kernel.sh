@@ -7,23 +7,36 @@
 
 set -e -o pipefail
 
-export CROSS_COMPILE=../PLATFORM/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-
-export ARCH=arm
+####################################################################################################
+# You need to create build_config.local for toolchain and modpath selection!
+# Example`
+# ###################################################################################################
+## build_config.local ###############################################################################
+## export CROSS_COMPILE=/mnt/android-workspace/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-
+## export ARCH=arm
+## MODULE_PATH=/mnt/android-workspace/out/target/product/gtexslte/root/lib/modules
+#####################################################################################################
+if [ ! -f 'build_config.local' ]; then
+	echo "No build_config.local found. Aborting."
+	exit 1
+fi
+
+source 'build_config.local'
 
 PLATFORM=sc8830
 DEFCONFIG=gtexslte_defconfig
-
 KERNEL_PATH=$(pwd)
-MODULE_PATH=${KERNEL_PATH}/modules
 EXTERNAL_MODULE_PATH=${KERNEL_PATH}/external_module
 
 JOBS=`grep processor /proc/cpuinfo | wc -l`
 
 function build_kernel() {
-	make ${DEFCONFIG}
-	make -j${JOBS}
+	make "$DEFCONFIG"
+	make headers_install
+    make -j$((${JOBS}+1))
 	make modules
 	make dtbs
+	./scripts/mkdtimg.sh -i ${KERNEL_PATH}/arch/arm/boot/dts/ -o dt.img
 	make -C ${EXTERNAL_MODULE_PATH}/wifi KDIR=${KERNEL_PATH}
 	make -C ${EXTERNAL_MODULE_PATH}/mali MALI_PLATFORM=${PLATFORM} BUILD=release KDIR=${KERNEL_PATH}
 
@@ -40,7 +53,7 @@ function clean() {
 }
 
 function main() {
-	[ "${1}" = "Clean" ] && clean || build_kernel
+	[ "${1}" = "clean" ] && clean || build_kernel
 }
 
 main $@
