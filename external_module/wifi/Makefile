@@ -1,11 +1,15 @@
 export ARCH ?= arm
 BUILD ?= debug
-ccflags-y += -DCONFIG_MACH_SAMSUNG
 
 ifneq ($(KERNELRELEASE),)
 # Inside the kernel build system
 
 EXTRA_CFLAGS += -I$(KBUILD_EXTMOD)
+EXTRA_CFLAGS += -DCONFIG_WCN_EXTENSION
+
+ifeq ($(CUSTOM_EXTRA), MACH_SAMSUNG)
+EXTRA_CFLAGS += -DCONFIG_MACH_SAMSUNG
+endif
 
 SRC = wlan_core.c wlan_fifo.c wlan_msg_q.c wlan_cmd.c wlan_npi.c wlan_hostapd_conf.c wlan_cfg80211.c wlan_tcp.c wlan_wapi.c wlan_qos.c
 
@@ -45,6 +49,7 @@ export CONFIG_ITTIAM := m
 ifeq ($(KDIR),)
 $(error No KDIR found for platform $(CPU))
 endif
+
 
 all:
 	$(MAKE) ARCH=$(ARCH) -C $(KDIR) M=$(CURDIR)
